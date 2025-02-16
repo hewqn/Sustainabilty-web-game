@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Save the Polar Bear - Sustainability Game</title>
+  <!-- Google Font for game styling -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* Global reset & body styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    #exitButton, #playAgainBtn {
+  font-family: 'Press Start 2P', cursive;
+    }
+    .game-object {
+  filter: drop-shadow(5px 5px 5px rgba(0, 0, 0, 0.5));
+}
+
+
+    img {
+  position: absolute; /* Ensures it's positioned relative to the viewport */
+  top: 0;
+  left: 0;
+  width: 100%; /* Full width of the browser viewport */
+  height: 100%; /* Full height of the browser viewport */
+  object-fit: cover; /* Ensures the image maintains its aspect ratio while covering */
+  z-index: -1; /* Moves the image behind other elements */
+    }
+
+    body {
+      background: #f4f4f4;
+      font-family: 'Press Start 2P', cursive;
+      color: black;
+      overflow: hidden;
+    }
+    /* Fullscreen Game Container */
+    #gameContainer {
+      width: 100vw;
+      height: 100vh;
+      background: #fff;
+      position: relative;
+    }
+    /* Info Bar */
+    #infoBar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px 20px;
+      background: rgba(250,250,250,0.9);
+      border-bottom: 2px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    #moneyText, #emissionText, #pointsText {
+      font-size: 18px;
+      color: #2c3e50;
+    }
+    #exitButton {
+      background: transparent;
+      border: none;
+      color: #e74c3c;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    /* Canvas */
+    #gameCanvas {
+      display: block;
+      background:lightblue;
+      width: 100%;
+      height: 100%;
+    }
+    /* Control Panel */
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+
+/* Freeze Ray Container */
+#freezeRayContainer {
+  position: absolute;
+  bottom: 270px; /* Place it above the goal text */
+  transform: translateX(-50%); /* Center alignment */
+  left: 45%;
+  z-index: 10; /* Ensure it's above other elements */
+  display: flex; /* Align contents properly */
+  align-items: center;
+}
+
+
+/* Freeze Ray Image */
+#freezeRayImg {
+  width: 150px; /* Increased size */
+  height: auto; /* Keeps aspect ratio */
+  object-fit: contain; /* Ensure proper scaling */
+  cursor: pointer; /* Show pointer on hover */
+  transition: transform 0.2s ease; /* Slight hover effect */
+}
+
+#freezeRayImg:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+}
+
+
+/* Freeze Ray Image (Clickable Button) */
+#buyFreezeRayBtn {
+  width: 90px; /* Adjust size */
+  height: auto;
+  object-fit: contain; /* Maintain aspect ratio */
+  cursor: pointer; /* Change cursor to pointer for better UX */
+  transition: transform 0.2s ease; /* Add animation effect on hover */
+}
+
+#buyFreezeRayBtn:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+}
+
+
+
+#buyFreezeRayBtn:disabled {
+  background: #aaa; /* Gray out when disabled */
+  cursor: not-allowed;
+}
+
+    /* Overlay Message */
+    #overlayMessage {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.9);
+      border-top: 2px solid #ddd;
+      font-size: 14px;
+      text-align: center;
+      z-index: 10;
+    }
+    /* Game Over Message */
+    #gameOverMessage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border: 2px solid #e74c3c;
+      border-radius: 10px;
+      font-size: 20px;
+      color: #e74c3c;
+      text-align: center;
+      z-index: 20;
+      display: none;
+    }
+    /* Play Again Button */
+    #playAgainBtn {
+      margin-top: 20px;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #playAgainBtn:hover {
+      background: #219150;
+    }
+    #startScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85); /* semi-transparent dark background */
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100; /* high z-index so it sits on top of your game */
+}
+
+#startScreen h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  font-family: 'Press Start 2P', cursive;
+}
+
+#startScreen button {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  padding: 10px 20px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+#startScreen button:hover {
+  background: #219150;
+}
+
+    
+  </style>
+</head>
+<body>
+    <!-- Start Screen Overlay -->
+    <div id="startScreen">
+      <h1>Save the Polar Bear</h1>
+      <button id="startButton">Start Game</button>
+    </div>
+  
+  <div id="gameContainer">
+     <!-- Info Bar -->
+  <div id="infoBar">
+    <span id="moneyText">$200</span>
+
+    <span id="emissionText">Emissions: 0/100</span>
+    <button id="exitButton">EXIT</button>
+  </div>
+    
+    <!-- Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Control Panel -->
+    <div id="controls">
+      <button id="buyFreezeRayBtn">Buy Freeze Ray (-$100)</button>
+    </div>
+    
+    <!-- Overlay Message -->
+    <div id="overlayMessage">
+      <p><strong>Goal:</strong> Save the polar bear from melting into the water by using the freeze ray!</p>
+      <p>
+        Each freeze ray purchase emits black carbon from the factory. If carbon emissions exceed allowed limits or the polar bear melts completely, you lose.
+      </p>
+    </div>
+
+      <!-- Freeze Ray -->
+  <div id="freezeRayContainer">
+    <img src="freezeray.png" id="freezeRayImg" alt="Freeze Ray" class="game-object"
+         style="cursor: pointer; width: 200px; height: auto;" />
+  </div>
+      
+   <!-- Polar Bear -->
+  <img id="polarBearImg" src="polarbear.png" alt="Polar Bear" class="game-object"
+  style="position: absolute; top: 300px; left: 40%; width: 150px;" />
+
+    <!-- Game Over Message -->
+    <div id="gameOverMessage">
+      <p id="gameOverText"></p>
+      <button id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    /********* Canvas Setup *********/
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    // Set canvas size to match browser viewport
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // UI Elements
+
+    const pointsText = document.getElementById('pointsText');
+
+    const exitButton = document.getElementById('exitButton');
+
+ 
+    const gameOverMessageDiv = document.getElementById('gameOverMessage');
+    const gameOverText = document.getElementById('gameOverText');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    /********* Game State Variables *********/
+    let points = 0;
+    let meltdownProgress = 0;  // 0 = safe, 100 = fully melted
+    let baseMeltdownRate = 0.3;   // Base melting rate
+    let meltdownRate = baseMeltdownRate;
+    let freezeRayReady = false;
+    let sunAngle = 0;
+    let smokeParticles = [];
+    let speedMultiplier = 1;    
+    const freezeRayPower = 100; // How much the freeze ray raises the bear
+    const freezeRayCooldown = 2000; // 2 seconds cooldown
+    let canUseFreezeRay = true; // Controls when freeze ray is clickable
+    let gameStartTime = Date.now();
+
+
+
+    let gameOver = false;
+
+    /********* Load Images *********/
+    const sunImg = new Image();
+    sunImg.src = 'sun.png';
+
+    const polarBearImg = new Image();
+    polarBearImg.src = 'polarbear.png';
+
+    const freezeGunImg = new Image();
+    freezeGunImg.src = 'freezeray.png';
+
+    const factoryImg = new Image();
+    factoryImg.src = 'factory.png';
+
+    const waterImg = new Image();
+    waterImg.src = 'water.png'; 
+
+    /********* Define Positions & Sizes *********/
+    // Sun: sways near top-left
+    const sunBaseX = 100;
+    const sunBaseY = 30;
+    const sunWidth = 400; // Width of the sun
+    const sunHeight = 400; // Height of the sun
+    const sunSwayAngle = 500 * (Math.PI / 180); // Convert degrees to radians (-20° to 20°)
+    let sunRotationAngle = 0; // Track the current rotation angle
+    let sunRotationDirection = 1; // 1 = increasing, -1 = decreasing
+
+    // Factory: fixed on right side
+    const factoryX = canvas.width * 0.7;
+    const factoryY = canvas.height * 0.40;
+    const factoryWidth = 300;
+    const factoryHeight = 300;
+
+    // Water: bottom of canvas
+    const waterX = 0;
+    const waterY = 270;
+    let waterWidth = canvas.width;
+    const waterHeight = 500;
+    
+
+    // Polar Bear: starts safe above water
+    let bearX = canvas.width * 0.4;
+    const bearSafeY = 300; // Minimum height above water
+    const bearWidth = 300;
+    const bearHeight = 300;
+
+    // Freeze Gun: bottom-left
+    const gunX = 50;
+    const gunY = canvas.height * 0.85;
+    const gunWidth = 150;
+    const gunHeight = 150;
+
+    /********* Smoke Particle System *********/
+    const SMOKE_LIFETIME = 200;
+    function emitSmoke(x, y) {
+    for (let i = 0; i < 5; i++) {
+    smokeParticles.push({
+      x: x,
+      y: y,
+      vx: (Math.random() - 0.5) * 1,
+      vy: -1 - Math.random(),
+      alpha: 1,
+      life: SMOKE_LIFETIME
+    });
+  }
+}
+
+    function updateSmoke() {
+      for (let i = smokeParticles.length - 1; i >= 0; i--) {
+        let sp = smokeParticles[i];
+        sp.x += sp.vx;
+        sp.y += sp.vy;
+        sp.life--;
+        sp.alpha = sp.life / SMOKE_LIFETIME;
+        if (sp.life <= 0) {
+          smokeParticles.splice(i, 1);
+        }
+      }
+    }
+    function drawSmoke() {
+      ctx.save();
+      smokeParticles.forEach(sp => {
+        ctx.globalAlpha = sp.alpha;
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, 15, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+/********* Event Listener for Buy Button *********/
+// UI Elements
+const moneyText = document.getElementById('moneyText');
+const emissionText = document.getElementById('emissionText');
+const polarBear = document.getElementById('polarBearImg');
+const freezeRayImg = document.getElementById('freezeRayImg');
+
+// Game Variables
+let money = 200; // Starting money
+let carbonEmissions = 0; // Starting emissions
+const maxCarbonEmissions = 100; // Emissions limit
+const emissionPerFreezeRay = 10; // Emissions per use
+const freezeRayCost = 100; // Cost of using the freeze ray
+let polarBearStartingY = 300; // Initial height of the polar bear
+let polarBearY = polarBearStartingY; // Current Y position of the polar bear
+const fallSpeed = 4; // Speed at which the polar bear falls
+let isFalling = true; // Whether the bear is currently falling
+
+// Event Listener: Freeze Ray Click
+freezeRayImg.addEventListener('click', () => {
+  console.log("Freeze ray clicked. Current money:", money);
+  if (money >= freezeRayCost) {
+    // Deduct the freeze ray cost and update the UI.
+    money -= freezeRayCost;
+    updateMoney();
+
+    // Increase carbon emissions and update the UI.
+    carbonEmissions += emissionPerFreezeRay;
+    updateEmissions();
+
+    setTimeout(() => {
+        carbonEmissions = Math.max(0, carbonEmissions - 5);
+        console.log("Emissions decreased by 5: ", carbonEmissions);
+        updateEmissions();
+    }, 5000);
+
+
+    // Check if emissions have exceeded the limit.
+    if (carbonEmissions >= maxCarbonEmissions) {
+    endGame("Carbon emissions exceeded allowed regulations! You lose.")
+      return;
+    }
+
+    // Trigger a burst of smoke from the factory.
+    for (let i = 0; i < 3; i++) {
+      setTimeout(() => {
+        emitSmoke(factoryX + factoryWidth / 2, factoryY);
+      }, i * 200); // 200ms apart for a burst effect.
+    }
+    meltdownProgress = 0; 
+    polarBear.style.top = `${bearSafeY}px`;
+    console.log("Polar bear reset to starting position.");
+
+
+     money +=50;
+     updateMoney();
+
+     isFalling = false;
+    setTimeout(() => { isFalling = true; }, 100);
+
+  } else {
+    alert("Not enough money to use the Freeze Ray!");
+  }
+});
+
+// Start the game loop
+gameLoop();
+
+setInterval(() => {
+  money += 60;  // or your desired bonus amount
+  updateMoney();
+  console.log("Bonus awarded: $50 for playing! Money is now:", money);
+}, 5000);
+
+
+/********* Update Buy Button State *********/
+function updateBuyButtonState() {
+  if (money < 100 || gameOver) {
+    buyFreezeRayBtn.disabled = true;
+  } else {
+    buyFreezeRayBtn.disabled = false;
+  }
+}
+
+// Call the update button state initially
+updateBuyButtonState();
+
+
+    // Check for carbon emission limit
+    if (carbonEmissions >= maxCarbonEmissions) {
+      endGame("Carbon emissions exceeded allowed regulations! You lose.");
+    }
+
+// Update the button's appearance based on the game state
+function updateFreezeRayButton() {
+  if (gameOver || money < 100) {
+    buyFreezeRayBtn.disabled = true;
+    buyFreezeRayBtn.style.background = '#aaa';
+    buyFreezeRayBtn.style.cursor = 'not-allowed';
+  } else {
+    buyFreezeRayBtn.disabled = false;
+    buyFreezeRayBtn.style.background = '#27ae60';
+    buyFreezeRayBtn.style.cursor = 'pointer';
+  }
+}
+
+
+    canvas.addEventListener('click', () => {
+  if (freezeRayReady && canUseFreezeRay) {
+    // Raise the polar bear
+    meltdownProgress -= 20; // Reset melting progress slightly
+    if (meltdownProgress < 0) meltdownProgress = 0; // Clamp to zero
+    bearY -= freezeRayPower; // Raise the bear's position
+
+    // Prevent the bear from going too high
+    if (bearY < bearSafeY) {
+      bearY = bearSafeY;
+    }
+
+    // Disable freeze ray temporarily (cooldown)
+    canUseFreezeRay = false;
+    freezeRayReady = false; // Disable freeze ray after use
+    setTimeout(() => {
+      canUseFreezeRay = true; // Re-enable freeze ray
+    }, freezeRayCooldown);
+  }
+});
+
+    exitButton.addEventListener('click', () => {
+      alert("Exiting game...");
+      // Optionally redirect or close the game
+    });
+
+    const startScreen = document.getElementById('startScreen');
+    const startButton = document.getElementById('startButton');
+    startButton.addEventListener('click', () => {
+      startScreen.style.display = 'none';
+      gameStartTime = Date.now();
+      requestAnimationFrame(gameLoop);
+    });
+    
+    playAgainBtn.addEventListener('click', () => {
+      // Reset all game state variables
+      money = 200;
+      points = 0;
+      carbonEmissions = 0;
+      meltdownProgress = 0;
+      speedMultiplier = 1;
+      gameOver = false;
+      freezeRayReady = false;
+      updateMoney();
+      updateEmissions();
+      gameOverMessageDiv.style.display = "none";
+      requestAnimationFrame(gameLoop);
+    });
+
+function updateMoney() {
+    moneyText.textContent = "Income: $" + money;
+    console.log("Money updated to: $" + money);
+    updateFreezeRayButton();
+    updateBuyButtonState();
+}
+
+
+function updateEmissions() {
+    emissionText.textContent = `Emissions: ${carbonEmissions}/${maxCarbonEmissions}`;
+    console.log(`Emissions updated: ${carbonEmissions}/${maxCarbonEmissions}`);
+}
+
+
+    /********* End Game Function *********/
+function endGame(message) {
+  gameOver = true;
+  gameOverMessageDiv.style.display = "block";
+  clearInterval(bonusInterval);
+  clearInterval(setInterval);
+
+  // Dynamically create the game-over message and Play Again button
+  gameOverMessageDiv.innerHTML = `
+    <p>${message}</p>
+    <button id="playAgainBtn">Play Again</button>
+  `;
+
+  // Reassign the event listener to the newly created button
+  document.getElementById('playAgainBtn').addEventListener('click', () => {
+    resetGame(); // Reset the game state
+    requestAnimationFrame(gameLoop); // Restart the game loop
+  });
+}
+
+function resetGame() {
+  money = 200;
+  points = 0;
+  carbonEmissions = 0;
+  meltdownProgress = 0;
+  speedMultiplier = 1;
+  gameOver = false;
+  freezeRayReady = false;
+  clearInterval(bonusInterval);
+
+  // Update UI elements
+  updateMoney();
+  updateEmissions();
+
+  // Hide the game-over message
+  gameOverMessageDiv.style.display = "none";
+}
+
+
+    /********* Game Loop *********/
+    function gameLoop() {
+  if (gameOver) return;
+
+  // Gradually increase game speed multiplier
+  speedMultiplier += 0.0005; // Adjust acceleration as needed
+  meltdownRate = baseMeltdownRate * speedMultiplier;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Update Sun Position and Rotation
+  const sunX = canvas.width / 2; // Center horizontally
+  const sunY = 100; // Fixed position near the top
+  sunRotationAngle += 0.001 * sunRotationDirection; // Adjust the rotation angle
+
+  // Reverse direction if we reach the sway limits (-20° to 20°)
+  if (sunRotationAngle > sunSwayAngle || sunRotationAngle < -sunSwayAngle) {
+    sunRotationDirection *= -1; // Switch rotation direction
+  }
+
+  // Draw the Rotating Sun
+  ctx.save(); // Save the current canvas state
+  ctx.translate(sunX, sunY); // Move the canvas origin to the center of the sun
+  ctx.rotate(sunRotationAngle); // Rotate the canvas
+  if (sunImg.complete) {
+    ctx.drawImage(sunImg, -sunWidth / 2, -sunHeight / 2, sunWidth, sunHeight); // Draw sun centered
+  }
+  ctx.restore(); // Restore the canvas state to prevent rotating other elements
+
+  // Draw Factory
+  if (factoryImg.complete) {
+    ctx.drawImage(factoryImg, factoryX, factoryY, factoryWidth, factoryHeight);
+  }
+    // Update bear position based on meltdown progress
+    bearY = bearSafeY + (meltdownProgress / 100) * 80;
+
+    // Draw the polar bear
+    if (polarBearImg.complete) {
+    ctx.drawImage(polarBearImg, bearX, bearY, bearWidth, bearHeight);
+    }
+  // Draw Water
+  if (waterImg.complete) {
+    ctx.drawImage(waterImg, waterX, waterY, waterWidth, waterHeight);
+  } else {
+    ctx.fillStyle = "#4ba3c7";
+    ctx.fillRect(waterX, waterY, waterWidth, waterHeight);
+  }
+
+  // Update & Draw Smoke
+  updateSmoke();
+  drawSmoke();
+
+  // Update melting: bear melts at a constant rate multiplied by speedMultiplier
+  meltdownProgress += meltdownRate;
+  if (meltdownProgress > 100) meltdownProgress = 100;
+
+  // Lose condition: if meltdown reaches 100, the bear is fully melted
+  if (meltdownProgress >= 100) {
+    endGame("The iceberg has melted! You lose.");
+    return;
+  }
+
+
+  // Show indicator if freeze ray is ready
+  if (freezeRayReady) {
+    ctx.fillStyle = "cyan";
+    ctx.font = "20px 'Press Start 2P', cursive";
+    ctx.fillText("Click to Freeze!", bearX - 10, bearY - 10);
+  }
+
+  // Continue the game loop
+  requestAnimationFrame(gameLoop);
+}
+
+const bonusInterval = setInterval(() => {
+  const elapsedSeconds = (Date.now() - gameStartTime);
+  console.log("Elapsed seconds:", elapsedSeconds);
+  if (elapsedSeconds > 1) {
+    money += 50;
+    updateMoney();
+    console.log("Bonus awarded: $50 for playing! Money is now:", money);
+  }
+}, 1000);
+
+
+    // Start the game loop initially
+    updateMoney();
+    updateEmissions();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
